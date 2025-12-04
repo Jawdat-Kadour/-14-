@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شبكة البيانات التفاعلية - المحافظات السورية</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        select, button {
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        select:hover, button:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            padding: 12px 30px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        #network-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #fafafa;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .network-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .node {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .node:hover {
+            filter: brightness(1.2);
+        }
+
+        .node.decision_maker {
+            fill: #4CAF50;
+            stroke: #2E7D32;
+            stroke-width: 3;
+        }
+
+        .node.process {
+            fill: #FF9800;
+            stroke: #E65100;
+            stroke-width: 2;
+        }
+
+        .node.data_source {
+            fill: #2196F3;
+            stroke: #1565C0;
+            stroke-width: 1.5;
+        }
+
+        .link {
+            stroke: #999;
+            stroke-opacity: 0.6;
+            stroke-width: 1.5;
+        }
+
+        .link.governance {
+            stroke: #4CAF50;
+            stroke-width: 2;
+        }
+
+        .link.belongs_to {
+            stroke: #FF9800;
+        }
+
+        .link.data_flow {
+            stroke: #2196F3;
+            stroke-opacity: 0.4;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card h3 {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .metric-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .metric-card .change {
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #333;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            pointer-events: none;
+            font-size: 0.9em;
+            z-index: 1000;
+            display: none;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .comparison-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 15px;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 شبكة البيانات التفاعلية - المحافظات السورية</h1>
+            <p>تحليل تأثير أنظمة ذكاء الأعمال على المنظمات في المحافظات السورية الـ 14</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>اختر المحافظة:</label>
+                <select id="governorate-select">
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>عرض الشبكة:</label>
+                <select id="view-mode">
+                    <option value="post">ما بعد تطبيق BI</option>
+                    <option value="pre">قبل تطبيق BI</option>
+                    <option value="compare">مقارنة</option>
+                </select>
+            </div>
+            <button onclick="resetView()">إعادة تعيين العرض</button>
+            <button onclick="resetZoom()">إعادة تعيين التكبير</button>
+            <button onclick="exportData()">تصدير البيانات</button>
+        </div>
+
+        <div class="main-content">
+            <div class="panel full-width">
+                <h2>شبكة البيانات التفاعلية</h2>
+                <div class="comparison-toggle">
+                    <div class="toggle-btn active" id="toggle-post" onclick="switchView('post')">
+                        ما بعد BI (متكامل ومرن)
+                    </div>
+                    <div class="toggle-btn" id="toggle-pre" onclick="switchView('pre')">
+                        قبل BI (مجزأ ومعزول)
+                    </div>
+                </div>
+                <div id="network-container">
+                    <div class="loading">جاري تحميل البيانات...</div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4CAF50; border-color: #2E7D32;"></div>
+                        <span>صانع القرار (مركز المحافظة)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF9800; border-color: #E65100;"></div>
+                        <span>العمليات/الأقسام (الصناعات)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2196F3; border-color: #1565C0;"></div>
+                        <span>مصادر البيانات (الشركات)</span>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 0.9em; color: #666;">
+                    <strong>💡 تلميحات:</strong> اسحب العقد لتحريكها | استخدم عجلة الماوس للتكبير/التصغير | اضغط واسحب للتحريك | مرر الماوس فوق العقد لرؤية التفاصيل
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>المؤشرات الرئيسية</h2>
+                <div class="metrics-grid" id="metrics-grid">
+                    <!-- Metrics will be populated here -->
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>تحليل الأداء</h2>
+                <div class="chart-container">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>توزيع الصناعات</h2>
+                <div class="chart-container">
+                    <canvas id="industry-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>مقارنة قبل وبعد BI</h2>
+                <div class="chart-container">
+                    <canvas id="comparison-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>نمو الأعمال</h2>
+                <div class="chart-container">
+                    <canvas id="growth-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
