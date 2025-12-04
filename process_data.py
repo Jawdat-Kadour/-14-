@@ -3,8 +3,11 @@ import json
 import numpy as np
 from collections import defaultdict
 
-# Read the CSV data
-df = pd.read_csv('expanded_syria_bi_data.csv')
+# Read the CSV data (prefer corrected version if available)
+import os
+data_file = 'expanded_syria_bi_data_corrected.csv' if os.path.exists('expanded_syria_bi_data_corrected.csv') else 'expanded_syria_bi_data.csv'
+df = pd.read_csv(data_file)
+print(f"Using data file: {data_file}")
 
 # Process data for each governorate
 governorates = df['Governorate'].unique()
